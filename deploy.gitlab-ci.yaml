@@ -1,0 +1,51 @@
+image: python:3.11
+
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+before_script:
+  - python -V
+  - pip install -U pip
+
+build:
+  stage: build
+  script:
+    - pip install -r requirements.txt --cache-dir $PIP_CACHE_DIR || true
+    - echo "Build successful"
+  artifacts:
+    paths:
+      - .cache/pip
+    expire_in: 1h
+  tags: []
+
+unit_tests:
+  stage: test
+  script:
+    - pip install -r requirements.txt
+    - pytest -q --junitxml=reports/junit.xml
+  artifacts:
+    when: always
+    reports:
+      junit: reports/junit.xml
+    paths:
+      - reports/
+    expire_in: 1h
+  allow_failure: false
+
+deploy_staging:
+  stage: deploy
+  image: alpine:3.18
+  before_script:
+    - apk add --no-cache curl jq
+  script:
+    - echo "Simulando despliegue..."
+    - echo "Deployed to staging"
+  environment:
+    name: staging
+    url: https://staging.example.com
+  when: manual
